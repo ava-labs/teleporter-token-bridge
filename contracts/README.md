@@ -2,6 +2,8 @@
 
 The ERC20 and native token bridges built on top of Teleporter are composed of interfaces and abstract contracts that make them extendable to new implementations in the future.
 
+## Overview
+
 ### `ITokenBridge`
 
 Interface that defines the events bridge contract implementations must emit. Also defines the message types and formats of messages between all implementations.
@@ -11,6 +13,12 @@ Interface that defines the events bridge contract implementations must emit. Als
 Interfaces that define the external functions for interacting with bridge contract implementations of each type. ERC20 and native token bridge interfaces vary from each other in that the native token bridge functions are `payable` and do not take an explicit amount parameter (it is implied by `msg.value`), while the ERC20 token bridge functions are not `payable` and require the explicit amount parameter. Otherwise, they include the same functions.
 
 ### `IERC20SendAndCallReceiver` and `INativeSendAndCallReceiver`
+
+Interfaces that define the external functions for receiving `sendAndCall` messages from the bridge contracts. These interfaces are intended to be implemented by contracts that wish to receive bridged tokens and perform another call with the bridged tokens in the same transaction. The `sendAndCall` function is a convenience function that allows for bridged tokens to be used in a smart contract interaction all within a single Teleporter message. If the call to the recipient smart contract fails, the bridged tokens are sent to a fallback recipient address on the destination chain of the transfer.
+
+### `IWrappedNativeToken` and `WrappedNativeToken`
+
+## Token Hub
 
 ### `TokenHub`
 
@@ -23,6 +31,8 @@ A concrete implementation of `TokenHub` and `IERC20TokenBridge` that handles the
 ### `NativeTokenHub`
 
 A concrete implementation of `TokenHub` and `INativeTokenBridge` that handles the locking and release of the native EVM asset on the hub chain.
+
+## Token Spoke
 
 ### `TokenSpoke`
 
