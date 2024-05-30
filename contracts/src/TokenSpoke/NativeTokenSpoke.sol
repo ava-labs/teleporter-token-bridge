@@ -23,7 +23,6 @@ import {INativeMinter} from
     "@avalabs/subnet-evm-contracts@1.2.0/contracts/interfaces/INativeMinter.sol";
 import {ERC20} from "@openzeppelin/contracts@4.8.1/token/ERC20/ERC20.sol";
 import {Address} from "@openzeppelin/contracts@4.8.1/utils/Address.sol";
-import {SendReentrancyGuard} from "../utils/SendReentrancyGuard.sol";
 import {CallUtils} from "../utils/CallUtils.sol";
 import {TokenScalingUtils} from "../utils/TokenScalingUtils.sol";
 
@@ -38,13 +37,7 @@ import {TokenScalingUtils} from "../utils/TokenScalingUtils.sol";
  * and represents the received tokens as the native token on this chain.
  * @custom:security-contact https://github.com/ava-labs/teleporter-token-bridge/blob/main/SECURITY.md
  */
-contract NativeTokenSpoke is
-    SendReentrancyGuard,
-    INativeTokenSpoke,
-    TokenSpoke,
-    IWrappedNativeToken,
-    ERC20
-{
+contract NativeTokenSpoke is INativeTokenSpoke, IWrappedNativeToken, ERC20, TokenSpoke {
     using Address for address payable;
 
     /**

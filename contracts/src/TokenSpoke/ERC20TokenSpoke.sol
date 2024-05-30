@@ -27,7 +27,7 @@ import {CallUtils} from "../utils/CallUtils.sol";
  * and represents the received tokens with an ERC20 token on this chain.
  * @custom:security-contact https://github.com/ava-labs/teleporter-token-bridge/blob/main/SECURITY.md
  */
-contract ERC20TokenSpoke is IERC20TokenBridge, TokenSpoke, ERC20 {
+contract ERC20TokenSpoke is IERC20TokenBridge, ERC20, TokenSpoke {
     using SafeERC20 for IERC20;
 
     uint8 private immutable _decimals;
@@ -50,11 +50,11 @@ contract ERC20TokenSpoke is IERC20TokenBridge, TokenSpoke, ERC20 {
     }
 
     /**
-     * @notice For transfers to an {input.destinationBlockchainID} that is not the {tokenHubBlockchainID},
+     * @dev See {IERC20TokenBridge-send}
+     *
+     * Note: For transfers to an {input.destinationBlockchainID} that is not the {tokenHubBlockchainID},
      * a multi-hop transfer is performed, where the tokens are sent back to the token hub instance
      * first to check for bridge balance, and then routed to the final destination spoke instance.
-     *
-     * @dev See {IERC20TokenBridge-send}
      */
     function send(SendTokensInput calldata input, uint256 amount) external {
         _send(input, amount);
