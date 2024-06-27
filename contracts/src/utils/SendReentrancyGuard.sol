@@ -5,6 +5,9 @@
 
 pragma solidity 0.8.18;
 
+import {Initializable} from
+    "@openzeppelin/contracts-upgradeable@4.9.6/proxy/utils/Initializable.sol";
+
 /**
  * @dev Abstract contract that helps implement reentrancy guards for Teleporter token bridge {_send} and {_sendAndCall}
  * functions.
@@ -16,7 +19,7 @@ pragma solidity 0.8.18;
  *
  * @custom:security-contact https://github.com/ava-labs/teleporter-token-bridge/blob/main/SECURITY.md
  */
-abstract contract SendReentrancyGuard {
+abstract contract SendReentrancyGuard is Initializable {
     uint256 internal constant _NOT_ENTERED = 1;
     uint256 internal constant _ENTERED = 2;
     uint256 private _sendEntered;
@@ -29,7 +32,8 @@ abstract contract SendReentrancyGuard {
         _sendEntered = _NOT_ENTERED;
     }
 
-    constructor() {
+    //solhint-disable-next-line func-name-mixedcase
+    function __SendReentrancyGuard_init() internal onlyInitializing {
         _sendEntered = _NOT_ENTERED;
     }
 }

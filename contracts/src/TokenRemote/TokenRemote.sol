@@ -33,26 +33,26 @@ import {TokenScalingUtils} from "../utils/TokenScalingUtils.sol";
  */
 abstract contract TokenRemote is ITokenRemote, TeleporterOwnerUpgradeable, SendReentrancyGuard {
     /// @notice The blockchain ID of the chain this contract is deployed on.
-    bytes32 public immutable blockchainID;
+    bytes32 public blockchainID;
 
     /// @notice The blockchain ID of the TokenHome instance this contract receives tokens from.
-    bytes32 public immutable tokenHomeBlockchainID;
+    bytes32 public tokenHomeBlockchainID;
 
     /// @notice The address of the TokenHome instance this contract receives tokens from on the {tokenHomeBlockchainID}.
-    address public immutable tokenHomeAddress;
+    address public tokenHomeAddress;
 
     /**
      * @notice The number of decimal places in the denomination of the home
      * token.
      * @dev Used to derive tokenMultiplier and multiplyOnRemote.
      */
-    uint8 public immutable homeTokenDecimals;
+    uint8 public homeTokenDecimals;
 
     /**
      * @notice The number of decimal places in the denomination of the remote token.
      * @dev Used to derive tokenMultiplier and multiplyOnRemote.
      */
-    uint8 public immutable tokenDecimals;
+    uint8 public tokenDecimals;
 
     /**
      * @notice tokenMultiplier allows this contract to scale the number of tokens it sends/receives to/from
@@ -61,7 +61,7 @@ abstract contract TokenRemote is ITokenRemote, TeleporterOwnerUpgradeable, SendR
      * @dev This is used to normalize the number of decimal places between the token home asset and the
      * token remote asset. It is derived from home and remote token decimals values passed in the constructor.
      */
-    uint256 public immutable tokenMultiplier;
+    uint256 public tokenMultiplier;
 
     /**
      * @notice If {multiplyOnRemote} is true, the home token amount will be multiplied by {tokenMultiplier} when tokens
@@ -71,13 +71,13 @@ abstract contract TokenRemote is ITokenRemote, TeleporterOwnerUpgradeable, SendR
      * are transferred from the home into this remote, and multiplied by {tokenMultiplier} when tokens are transferred
      * from this remote back to its home.
      */
-    bool public immutable multiplyOnRemote;
+    bool public multiplyOnRemote;
 
     /**
      * @notice Initial reserve imbalance that the token for this TokenRemote instance starts with. The home contract must
      * collateralize a corresonding amount of home tokens before tokens can be minted on this contract.
      */
-    uint256 public immutable initialReserveImbalance;
+    uint256 public initialReserveImbalance;
 
     /**
      * @notice Whether or not the contract is known to be fully collateralized.
@@ -117,7 +117,7 @@ abstract contract TokenRemote is ITokenRemote, TeleporterOwnerUpgradeable, SendR
     /**
      * @notice Fixed gas cost for registering the remote contract on the home contract.
      */
-    uint256 public constant REGISTER_REMOTE_REQUIRED_GAS = 115_000;
+    uint256 public constant REGISTER_REMOTE_REQUIRED_GAS = 135_000;
 
     /**
      * @notice Initializes this token TokenRemote instance.
@@ -125,11 +125,17 @@ abstract contract TokenRemote is ITokenRemote, TeleporterOwnerUpgradeable, SendR
      * @param initialReserveImbalance_ The initial reserve imbalance that must be collateralized before minting.
      * @param tokenDecimals_ The number of decimal places in the denomination of the remote token.
      */
-    constructor(
+    // solhint-disable ordering
+    // solhint-disable-next-line func-name-mixedcase
+    function __TokenRemote_init(
         TokenRemoteSettings memory settings,
         uint256 initialReserveImbalance_,
         uint8 tokenDecimals_
-    ) TeleporterOwnerUpgradeable(settings.teleporterRegistryAddress, settings.teleporterManager) {
+    ) internal onlyInitializing {
+        __TeleporterOwnerUpgradeable_init(
+            settings.teleporterRegistryAddress, settings.teleporterManager
+        );
+        __SendReentrancyGuard_init();
         blockchainID = IWarpMessenger(0x0200000000000000000000000000000000000005).getBlockchainID();
         require(
             settings.tokenHomeBlockchainID != bytes32(0),
@@ -199,6 +205,7 @@ abstract contract TokenRemote is ITokenRemote, TeleporterOwnerUpgradeable, SendR
         // Right-shift by 5 bits to divide by 32.
         return (payloadSize + 31) >> 5;
     }
+    // solhint-enable ordering
 
     /**
      * @notice Sends tokens to the specified destination.

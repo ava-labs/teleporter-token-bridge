@@ -28,7 +28,7 @@ contract NativeTokenHome is INativeTokenHome, TokenHome {
     /**
      * @notice The wrapped native token contract that represents the native tokens on this chain.
      */
-    IWrappedNativeToken public immutable wrappedToken;
+    IWrappedNativeToken public wrappedToken;
 
     /**
      * @notice Initializes this token TokenHome instance to send native tokens to TokenRemote instances on other chains.
@@ -40,11 +40,12 @@ contract NativeTokenHome is INativeTokenHome, TokenHome {
      * @param wrappedTokenAddress The wrapped native token contract address of the native asset
      * to be bridged to TokenRemote instances.
      */
-    constructor(
+    function initialize(
         address teleporterRegistryAddress,
         address teleporterManager,
         address wrappedTokenAddress
-    ) TokenHome(teleporterRegistryAddress, teleporterManager, wrappedTokenAddress, 18) {
+    ) public initializer {
+        __TokenHome_init(teleporterRegistryAddress, teleporterManager, wrappedTokenAddress, 18);
         wrappedToken = IWrappedNativeToken(wrappedTokenAddress);
     }
 

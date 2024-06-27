@@ -27,7 +27,8 @@ contract ERC20TokenHomeTest is ERC20TokenBridgeTest, TokenHomeTest {
 
         mockERC20 = new ExampleERC20();
         tokenHomeDecimals = 6;
-        app = new ERC20TokenHome(
+        app = new ERC20TokenHome();
+        app.initialize(
             MOCK_TELEPORTER_REGISTRY_ADDRESS,
             MOCK_TELEPORTER_MESSENGER_ADDRESS,
             address(mockERC20),
@@ -44,37 +45,42 @@ contract ERC20TokenHomeTest is ERC20TokenBridgeTest, TokenHomeTest {
      * Initialization unit tests
      */
     function testZeroTeleporterRegistryAddress() public {
-        vm.expectRevert("TeleporterUpgradeable: zero teleporter registry address");
-        new ERC20TokenHome(address(0), address(this), address(mockERC20), tokenHomeDecimals);
+        _invalidInitialization(
+            address(0),
+            address(this),
+            address(mockERC20),
+            tokenHomeDecimals,
+            "TeleporterUpgradeable: zero teleporter registry address"
+        );
     }
 
     function testZeroTeleporterManagerAddress() public {
-        vm.expectRevert("Ownable: new owner is the zero address");
-        new ERC20TokenHome(
+        _invalidInitialization(
             MOCK_TELEPORTER_REGISTRY_ADDRESS,
             address(0),
             address(mockERC20),
-            tokenHomeDecimals
+            tokenHomeDecimals,
+            "Ownable: new owner is the zero address"
         );
     }
 
     function testZeroFeeTokenAddress() public {
-        vm.expectRevert(_formatErrorMessage("zero token address"));
-        new ERC20TokenHome(
+        _invalidInitialization(
             MOCK_TELEPORTER_REGISTRY_ADDRESS,
             address(this),
             address(0),
-            tokenHomeDecimals
+            tokenHomeDecimals,
+            _formatErrorMessage("zero token address")
         );
     }
 
     function testTokenDecimalsTooHigh() public {
-        vm.expectRevert(_formatErrorMessage("token decimals too high"));
-        new ERC20TokenHome(
+        _invalidInitialization(
             MOCK_TELEPORTER_REGISTRY_ADDRESS,
             address(this),
             address(mockERC20),
-            uint8(TokenScalingUtils.MAX_TOKEN_DECIMALS) + 1
+            uint8(TokenScalingUtils.MAX_TOKEN_DECIMALS) + 1,
+            _formatErrorMessage("token decimals too high")
         );
     }
 
@@ -82,7 +88,13 @@ contract ERC20TokenHomeTest is ERC20TokenBridgeTest, TokenHomeTest {
         // Set up a registered remote that will scale down the received amount
         // to zero home tokens.
         uint256 tokenMultiplier = 100_000;
-        _setUpRegisteredRemote(DEFAULT_TOKEN_REMOTE_BLOCKCHAIN_ID, DEFAULT_TOKEN_REMOTE_ADDRESS, 0, tokenMultiplier, true);
+        _setUpRegisteredRemote(
+            DEFAULT_TOKEN_REMOTE_BLOCKCHAIN_ID,
+            DEFAULT_TOKEN_REMOTE_ADDRESS,
+            0,
+            tokenMultiplier,
+            true
+        );
 
         // Send over home token to the remote
         // and check for expected calls for scaled amount of tokens sent.
@@ -91,7 +103,9 @@ contract ERC20TokenHomeTest is ERC20TokenBridgeTest, TokenHomeTest {
         _setUpExpectedDeposit(amount, input.primaryFee);
 
         uint256 scaledAmount = tokenMultiplier * amount;
-        _checkExpectedTeleporterCallsForSend(_createSingleHopTeleporterMessageInput(input, scaledAmount));
+        _checkExpectedTeleporterCallsForSend(
+            _createSingleHopTeleporterMessageInput(input, scaledAmount)
+        );
         vm.expectEmit(true, true, true, true, address(tokenBridge));
         emit TokensSent(_MOCK_MESSAGE_ID, address(this), input, scaledAmount);
         _send(input, amount);
@@ -108,9 +122,12 @@ contract ERC20TokenHomeTest is ERC20TokenBridgeTest, TokenHomeTest {
     }
 
     function testRegisterDestinationRoundUpCollateralNeeded() public {
-        _setUpRegisteredRemote(DEFAULT_TOKEN_REMOTE_BLOCKCHAIN_ID, DEFAULT_TOKEN_REMOTE_ADDRESS, 11, 10, true);
-        (, uint256 collateralNeeded,,) =
-            tokenHome.registeredRemotes(DEFAULT_TOKEN_REMOTE_BLOCKCHAIN_ID, DEFAULT_TOKEN_REMOTE_ADDRESS);
+        _setUpRegisteredRemote(
+            DEFAULT_TOKEN_REMOTE_BLOCKCHAIN_ID, DEFAULT_TOKEN_REMOTE_ADDRESS, 11, 10, true
+        );
+        (, uint256 collateralNeeded,,) = tokenHome.registeredRemotes(
+            DEFAULT_TOKEN_REMOTE_BLOCKCHAIN_ID, DEFAULT_TOKEN_REMOTE_ADDRESS
+        );
         assertEq(collateralNeeded, 2);
     }
 
@@ -123,12 +140,17 @@ contract ERC20TokenHomeTest is ERC20TokenBridgeTest, TokenHomeTest {
 
         // Raw amount sent over wire should be multipled by 1e2.
         uint256 tokenMultiplier = 1e2;
-        _setUpRegisteredRemote(input.destinationBlockchainID, input.destinationBridgeAddress, 0, tokenMultiplier, true);
+        _setUpRegisteredRemote(
+            input.destinationBlockchainID, input.destinationBridgeAddress, 0, tokenMultiplier, true
+        );
         _setUpExpectedDeposit(amount, input.primaryFee);
         TeleporterMessageInput memory expectedMessage = TeleporterMessageInput({
             destinationBlockchainID: input.destinationBlockchainID,
             destinationAddress: input.destinationBridgeAddress,
-            feeInfo: TeleporterFeeInfo({feeTokenAddress: address(bridgedToken), amount: input.primaryFee}),
+            feeInfo: TeleporterFeeInfo({
+                feeTokenAddress: address(bridgedToken),
+                amount: input.primaryFee
+            }),
             requiredGasLimit: input.requiredGasLimit,
             allowedRelayerAddresses: new address[](0),
             message: _encodeSingleHopSendMessage(amount * tokenMultiplier, DEFAULT_RECIPIENT_ADDRESS)
@@ -142,7 +164,9 @@ contract ERC20TokenHomeTest is ERC20TokenBridgeTest, TokenHomeTest {
     function _checkExpectedWithdrawal(address recipient, uint256 amount) internal override {
         vm.expectEmit(true, true, true, true, address(tokenHome));
         emit TokensWithdrawn(recipient, amount);
-        vm.expectCall(address(mockERC20), abi.encodeCall(IERC20.transfer, (address(recipient), amount)));
+        vm.expectCall(
+            address(mockERC20), abi.encodeCall(IERC20.transfer, (address(recipient), amount))
+        );
         vm.expectEmit(true, true, true, true, address(mockERC20));
         emit Transfer(address(app), recipient, amount);
     }
@@ -204,10 +228,11 @@ contract ERC20TokenHomeTest is ERC20TokenBridgeTest, TokenHomeTest {
         }
     }
 
-    function _addCollateral(bytes32 remoteBlockchainID, address remoteBridgeAddress, uint256 amount)
-        internal
-        override
-    {
+    function _addCollateral(
+        bytes32 remoteBlockchainID,
+        address remoteBridgeAddress,
+        uint256 amount
+    ) internal override {
         app.addCollateral(remoteBlockchainID, remoteBridgeAddress, amount);
     }
 
@@ -226,7 +251,9 @@ contract ERC20TokenHomeTest is ERC20TokenBridgeTest, TokenHomeTest {
             bridgedToken.safeIncreaseAllowance(address(tokenBridge), feeAmount);
             vm.expectCall(
                 address(bridgedToken),
-                abi.encodeCall(IERC20.transferFrom, (address(this), address(tokenBridge), feeAmount))
+                abi.encodeCall(
+                    IERC20.transferFrom, (address(this), address(tokenBridge), feeAmount)
+                )
             );
         }
         // Increase the allowance of the bridge to transfer the funds from the user
@@ -235,9 +262,24 @@ contract ERC20TokenHomeTest is ERC20TokenBridgeTest, TokenHomeTest {
         // Check that transferFrom is called to deposit the funds sent from the user to the bridge
         // This is the case because for the {ERC20TokenHome) is not the fee token itself
         vm.expectCall(
-            address(bridgedToken), abi.encodeCall(IERC20.transferFrom, (address(this), address(tokenBridge), amount))
+            address(bridgedToken),
+            abi.encodeCall(IERC20.transferFrom, (address(this), address(tokenBridge), amount))
         );
         vm.expectEmit(true, true, true, true, address(bridgedToken));
         emit Transfer(address(this), address(tokenBridge), amount);
+    }
+
+    function _invalidInitialization(
+        address teleporterRegistryAddress,
+        address teleporterManagerAddress,
+        address feeTokenAddress,
+        uint8 tokenDecimals,
+        bytes memory expectedErrorMessage
+    ) private {
+        app = new ERC20TokenHome();
+        vm.expectRevert(expectedErrorMessage);
+        app.initialize(
+            teleporterRegistryAddress, teleporterManagerAddress, feeTokenAddress, tokenDecimals
+        );
     }
 }

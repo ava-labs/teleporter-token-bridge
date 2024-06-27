@@ -21,7 +21,9 @@ import {
 import {TeleporterFeeInfo, TeleporterMessageInput} from "@teleporter/ITeleporterMessenger.sol";
 import {INativeMinter} from
     "@avalabs/subnet-evm-contracts@1.2.0/contracts/interfaces/INativeMinter.sol";
-import {IERC20, ERC20} from "@openzeppelin/contracts@4.8.1/token/ERC20/ERC20.sol";
+import {IERC20} from "@openzeppelin/contracts@4.8.1/token/ERC20/ERC20.sol";
+import {ERC20Upgradeable} from
+    "@openzeppelin/contracts-upgradeable@4.9.6/token/ERC20/ERC20Upgradeable.sol";
 import {Address} from "@openzeppelin/contracts@4.8.1/utils/Address.sol";
 import {CallUtils} from "../utils/CallUtils.sol";
 import {TokenScalingUtils} from "../utils/TokenScalingUtils.sol";
@@ -33,7 +35,12 @@ import {SafeERC20TransferFrom} from "../utils/SafeERC20TransferFrom.sol";
  * and represents the received tokens as the native token on this chain.
  * @custom:security-contact https://github.com/ava-labs/teleporter-token-bridge/blob/main/SECURITY.md
  */
-contract NativeTokenRemote is INativeTokenRemote, IWrappedNativeToken, ERC20, TokenRemote {
+contract NativeTokenRemote is
+    INativeTokenRemote,
+    IWrappedNativeToken,
+    ERC20Upgradeable,
+    TokenRemote
+{
     using Address for address payable;
 
     /**
@@ -74,7 +81,7 @@ contract NativeTokenRemote is INativeTokenRemote, IWrappedNativeToken, ERC20, To
      * @notice Percentage of burned transaction fees that will be rewarded to a relayer delivering
      * the message created by calling calling reportBurnedTxFees().
      */
-    uint256 public immutable burnedFeesReportingRewardPercentage;
+    uint256 public burnedFeesReportingRewardPercentage;
 
     /**
      * @notice Total number of tokens minted by this contract through the native minter precompile.
@@ -104,15 +111,14 @@ contract NativeTokenRemote is INativeTokenRemote, IWrappedNativeToken, ERC20, To
      * @param burnedFeesReportingRewardPercentage_ The percentage of burned transaction fees
      * that will be rewarded to sender of the report.
      */
-    constructor(
+    function initialize(
         TokenRemoteSettings memory settings,
         string memory nativeAssetSymbol,
         uint256 initialReserveImbalance,
         uint256 burnedFeesReportingRewardPercentage_
-    )
-        ERC20(string.concat("Wrapped ", nativeAssetSymbol), nativeAssetSymbol)
-        TokenRemote(settings, initialReserveImbalance, 18)
-    {
+    ) public initializer {
+        __ERC20_init(nativeAssetSymbol, nativeAssetSymbol);
+        __TokenRemote_init(settings, initialReserveImbalance, 18);
         require(initialReserveImbalance != 0, "NativeTokenRemote: zero initial reserve imbalance");
         require(burnedFeesReportingRewardPercentage_ < 100, "NativeTokenRemote: invalid percentage");
         burnedFeesReportingRewardPercentage = burnedFeesReportingRewardPercentage_;

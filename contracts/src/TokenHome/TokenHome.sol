@@ -54,7 +54,7 @@ struct RemoteBridgeSettings {
  */
 abstract contract TokenHome is ITokenHome, TeleporterOwnerUpgradeable, SendReentrancyGuard {
     /// @notice The blockchain ID of the chain this contract is deployed on.
-    bytes32 public immutable blockchainID;
+    bytes32 public blockchainID;
 
     /**
      * @notice The token address this home contract bridges to TokenRemote instances.
@@ -62,9 +62,9 @@ abstract contract TokenHome is ITokenHome, TeleporterOwnerUpgradeable, SendReent
      * If the token is an ERC20 token, the contract address is directly passed in.
      * If the token is a native asset, the contract address is the wrapped token contract.
      */
-    address public immutable tokenAddress;
+    address public tokenAddress;
 
-    uint8 public immutable tokenDecimals;
+    uint8 public tokenDecimals;
 
     /**
      * @notice Tracks the settings for each remote bridge instance. TokenRemote instances
@@ -87,13 +87,21 @@ abstract contract TokenHome is ITokenHome, TeleporterOwnerUpgradeable, SendReent
 
     /**
      * @notice Initializes this home bridge instance to send tokens to TokenRemote instances on other chains.
+     * @param teleporterRegistryAddress The address of the TeleporterRegistry contract.
+     * @param teleporterManager Address that manages this contract's integration with the
+     * Teleporter registry and Teleporter versions.
+     * @param tokenAddress_ The token contract address to be bridged by the home instance.
+     * @param tokenDecimals_ The number of decimals for the token being bridged.
      */
-    constructor(
+    // solhint-disable-next-line func-name-mixedcase
+    function __TokenHome_init(
         address teleporterRegistryAddress,
         address teleporterManager,
         address tokenAddress_,
         uint8 tokenDecimals_
-    ) TeleporterOwnerUpgradeable(teleporterRegistryAddress, teleporterManager) {
+    ) internal virtual onlyInitializing {
+        __TeleporterOwnerUpgradeable_init(teleporterRegistryAddress, teleporterManager);
+        __SendReentrancyGuard_init();
         blockchainID = IWarpMessenger(0x0200000000000000000000000000000000000005).getBlockchainID();
         require(tokenAddress_ != address(0), "TokenHome: zero token address");
         require(

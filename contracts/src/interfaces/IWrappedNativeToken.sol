@@ -5,7 +5,8 @@
 
 pragma solidity 0.8.18;
 
-import {IERC20} from "@openzeppelin/contracts@4.8.1/token/ERC20/ERC20.sol";
+import {IERC20Upgradeable} from
+    "@openzeppelin/contracts-upgradeable@4.9.6/token/ERC20/ERC20Upgradeable.sol";
 
 /**
  * @title IWrappedNativeToken
@@ -14,7 +15,7 @@ import {IERC20} from "@openzeppelin/contracts@4.8.1/token/ERC20/ERC20.sol";
  *
  * @custom:security-contact https://github.com/ava-labs/teleporter-token-bridge/blob/main/SECURITY.md
  */
-interface IWrappedNativeToken is IERC20 {
+interface IWrappedNativeToken is IERC20Upgradeable {
     /**
      * @notice Emitted when native tokens are deposited.
      * @param sender Address that deposited the native tokens

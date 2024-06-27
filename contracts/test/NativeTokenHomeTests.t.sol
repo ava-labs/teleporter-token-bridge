@@ -27,16 +27,17 @@ contract NativeTokenHomeTest is NativeTokenBridgeTest, TokenHomeTest {
     function setUp() public override {
         TokenHomeTest.setUp();
 
-        wavax = new WrappedNativeToken("AVAX");
-        app = new NativeTokenHome(
-            MOCK_TELEPORTER_REGISTRY_ADDRESS,
-            MOCK_TELEPORTER_MESSENGER_ADDRESS,
-            address(wavax)
+        WrappedNativeToken token = new WrappedNativeToken();
+        token.initialize("AVAX");
+        wavax = token;
+        app = new NativeTokenHome();
+        app.initialize(
+            MOCK_TELEPORTER_REGISTRY_ADDRESS, MOCK_TELEPORTER_MESSENGER_ADDRESS, address(wavax)
         );
         tokenHome = app;
         nativeTokenBridge = app;
         tokenBridge = app;
-        bridgedToken = wavax;
+        bridgedToken = IERC20(address(wavax));
         tokenHomeDecimals = 18;
     }
 
@@ -44,18 +45,30 @@ contract NativeTokenHomeTest is NativeTokenBridgeTest, TokenHomeTest {
      * Initialization unit tests
      */
     function testZeroTeleporterRegistryAddress() public {
-        vm.expectRevert("TeleporterUpgradeable: zero teleporter registry address");
-        new NativeTokenHome(address(0), address(this), address(wavax));
+        _invalidInitialization(
+            address(0),
+            address(this),
+            address(wavax),
+            "TeleporterUpgradeable: zero teleporter registry address"
+        );
     }
 
     function testZeroTeleporterManagerAddress() public {
-        vm.expectRevert("Ownable: new owner is the zero address");
-        new NativeTokenHome(MOCK_TELEPORTER_REGISTRY_ADDRESS, address(0), address(wavax));
+        _invalidInitialization(
+            MOCK_TELEPORTER_REGISTRY_ADDRESS,
+            address(0),
+            address(wavax),
+            "Ownable: new owner is the zero address"
+        );
     }
 
     function testZeroFeeTokenAddress() public {
-        vm.expectRevert(_formatErrorMessage("zero token address"));
-        new NativeTokenHome(MOCK_TELEPORTER_REGISTRY_ADDRESS, address(this), address(0));
+        _invalidInitialization(
+            MOCK_TELEPORTER_REGISTRY_ADDRESS,
+            address(this),
+            address(0),
+            _formatErrorMessage("zero token address")
+        );
     }
 
     function _checkExpectedWithdrawal(address recipient, uint256 amount) internal override {
@@ -132,5 +145,16 @@ contract NativeTokenHomeTest is NativeTokenBridgeTest, TokenHomeTest {
         uint256 amount
     ) internal override {
         app.addCollateral{value: amount}(remoteBlockchainID, remoteBridgeAddress);
+    }
+
+    function _invalidInitialization(
+        address teleporterRegistryAddress,
+        address teleporterManagerAddress,
+        address wrappedTokenAddress,
+        bytes memory expectedErrorMessage
+    ) private {
+        app = new NativeTokenHome();
+        vm.expectRevert(expectedErrorMessage);
+        app.initialize(teleporterRegistryAddress, teleporterManagerAddress, wrappedTokenAddress);
     }
 }

@@ -26,7 +26,7 @@ contract ERC20TokenHome is IERC20TokenHome, TokenHome {
     using SafeERC20 for IERC20;
 
     /// @notice The ERC20 token this home contract bridges to TokenRemote instances.
-    IERC20 public immutable token;
+    IERC20 public token;
 
     /**
      * @notice Initializes the token TokenHome instance to send ERC20 tokens to TokenRemote instances on other chains.
@@ -37,12 +37,15 @@ contract ERC20TokenHome is IERC20TokenHome, TokenHome {
      * @param tokenAddress_ The ERC20 token contract address to be bridged by the home.
      * @param tokenDecimals_ The number of decimals for the ERC20 token
      */
-    constructor(
+    function initialize(
         address teleporterRegistryAddress,
         address teleporterManager,
         address tokenAddress_,
         uint8 tokenDecimals_
-    ) TokenHome(teleporterRegistryAddress, teleporterManager, tokenAddress_, tokenDecimals_) {
+    ) public initializer {
+        __TokenHome_init(
+            teleporterRegistryAddress, teleporterManager, tokenAddress_, tokenDecimals_
+        );
         token = IERC20(tokenAddress);
     }
 

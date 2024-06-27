@@ -12,7 +12,9 @@ import {IERC20SendAndCallReceiver} from "../interfaces/IERC20SendAndCallReceiver
 import {
     SendTokensInput, SendAndCallInput, SingleHopCallMessage
 } from "../interfaces/ITokenBridge.sol";
-import {IERC20, ERC20} from "@openzeppelin/contracts@4.8.1/token/ERC20/ERC20.sol";
+import {IERC20} from "@openzeppelin/contracts@4.8.1/token/ERC20/ERC20.sol";
+import {ERC20Upgradeable} from
+    "@openzeppelin/contracts-upgradeable@4.9.6/token/ERC20/ERC20Upgradeable.sol";
 import {SafeERC20TransferFrom} from "../utils/SafeERC20TransferFrom.sol";
 import {CallUtils} from "../utils/CallUtils.sol";
 
@@ -22,8 +24,8 @@ import {CallUtils} from "../utils/CallUtils.sol";
  * and represents the received tokens with an ERC20 token on this chain.
  * @custom:security-contact https://github.com/ava-labs/teleporter-token-bridge/blob/main/SECURITY.md
  */
-contract ERC20TokenRemote is IERC20TokenBridge, ERC20, TokenRemote {
-    uint8 private immutable _decimals;
+contract ERC20TokenRemote is IERC20TokenBridge, ERC20Upgradeable, TokenRemote {
+    uint8 private _decimals;
 
     /**
      * @notice Initializes this token TokenRemote instance to receive tokens from the specified TokenHome instance,
@@ -33,12 +35,14 @@ contract ERC20TokenRemote is IERC20TokenBridge, ERC20, TokenRemote {
      * @param tokenSymbol The symbol of the ERC20 token.
      * @param tokenDecimals_ The number of decimals for the ERC20 token.
      */
-    constructor(
+    function initialize(
         TokenRemoteSettings memory settings,
         string memory tokenName,
         string memory tokenSymbol,
         uint8 tokenDecimals_
-    ) TokenRemote(settings, 0, tokenDecimals_) ERC20(tokenName, tokenSymbol) {
+    ) public initializer {
+        __ERC20_init(tokenName, tokenSymbol);
+        __TokenRemote_init(settings, 0, tokenDecimals_);
         _decimals = tokenDecimals;
     }
 
